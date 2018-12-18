@@ -8,6 +8,11 @@
 //otchet
 // del len, 3d word len
 // free txt
+
+
+//221
+
+
 #include <wctype.h>
 #include <wchar.h>
 #include <stdio.h>
@@ -22,7 +27,7 @@
 
 #define SENT 32
 #define SIZE 64
-#define WORD 16
+#define WORD 48
 #define HELLO                                                                                          \
 L"|    Здравствуй, пользователь!                                                                   |\n"\
 L"|    Добро пожаловать в мою прогрумму                                                            |\n"
@@ -41,9 +46,10 @@ struct Sentence{
     size_t len;
     wchar_t *sent;
     size_t len_third_word;
-    wchar_t flag;             //разукрашивание
+    wchar_t flag_color;             //разукрашивание
     wchar_t * second_word;
     size_t len_without_first_word;
+    wchar_t flag_xchange;
 };
 struct Text{
     struct Sentence *sentences;
@@ -221,30 +227,40 @@ void print_green(struct Text *txt);
 void green(struct Text *txt){
     wchar_t* copy;
     wchar_t* word;
-    wchar_t stop=0;
+    wchar_t stop;
+    wchar_t* pt;
     for (size_t i=0;i<txt->count_sent;i++){
         copy = malloc(sizeof(wchar_t)*txt->sentences[i].len+1);
         wmemcpy(copy,txt->sentences[i].sent,txt->sentences[i].len+1);
-        wchar_t* pt=NULL;
-        txt->sentences[i].flag=0;
-        word=wcstok(copy, L" ,",&pt);
-        for (size_t j=0;j<wcslen(word)-1;j++){
-            if(iswdigit(word[j])!=0){
-                txt->sentences[i].flag=1;
-                stop=1;
-                break;
+        pt=NULL;
+        txt->sentences[i].flag_color=0;
+        word=wcstok(copy, L" ,.",&pt);
+        stop=0;
+        if (word == NULL) {
+            continue;
+        }
+        size_t LED=wcslen(word);
+        if (wcslen(word)>=3){
+            for (size_t j=1;j<wcslen(word)-1;j++) {
+                if (iswdigit(word[j]) != 0) {
+                    txt->sentences[i].flag_color = 1;
+                    stop = 1;
+                    break;
+                }
             }
         }
         while(word!=NULL&&stop!=1){
-            word=wcstok(NULL, L" ,",&pt);
-            if (word==NULL){
+            word=wcstok(NULL, L" ,.",&pt);
+            if (word == NULL) {
                 break;
             }
-            for (size_t j=0;j<wcslen(word)-1;j++){
-                if(iswdigit(word[j])!=0){
-                    txt->sentences[i].flag=1;
-                    stop=1;
-                    break;
+            if(wcslen(word)>=4) {
+                for (size_t j = 1; j < wcslen(word) - 2; j++) {
+                    if (iswdigit(word[j]) != 0) {
+                        txt->sentences[i].flag_color = 1;
+                        stop = 1;
+                        break;
+                    }
                 }
             }
         }
@@ -259,27 +275,31 @@ void print_green(struct Text *txt){
     wchar_t* word;
     wchar_t sym;
     size_t size=WORD;
+    size_t j; // номер символа в строке
+    wchar_t green;
+    size_t z; // номер символа в слове
+    int key;
     for (size_t i=0;i<txt->count_sent;i++){
-        if(txt->sentences[i].flag){
+        if(txt->sentences[i].flag_color){
             word=calloc(WORD, sizeof(wchar_t));
-            size_t j=0;
-            int key=0;
-            wchar_t green=0;
-            size_t z=0;
+            j=0;
+            key=0;
+            green=0;
+            z=0;
             do{
                 sym=txt->sentences[i].sent[j];
                 if (green==1){
-                    if (sym!=L'.'&&sym!=L' '&&sym!=L','){
+                    if (sym!=L'.' && sym!=L' ' && sym!=L','){   // не последняя
                         green=2;
                     }
                 }
-                if(key>=1&&iswdigit(sym)){
+                if(key>=1&&iswdigit(sym)&&green!=2){
                     green=1;
                 }
 
                 if(sym==L'.'||sym==L' '||sym==L','){
                     z=0;
-                    key=-1;
+                    key=0;
                     if (green==2){
                         wprintf(L"%s%ls%s", GREEN, word, NONE);
                     }
@@ -294,22 +314,24 @@ void print_green(struct Text *txt){
                     continue;
                 }
 
-                if (sym!=L'.' && sym!=L' ' && sym!=L',') {
-                    word[z]=sym;
-                    key++;
-                    z++;
-                    if (z==size){
-                        size+=WORD;
-                        wchar_t *temp= realloc(word, size*sizeof(wchar_t));
-                        if (temp){
-                            word=temp;
-                        }
-                        else {
-                            printf("\nAXTUNG\nMem sent error");
+                else {
+                    if (sym != L'.' && sym != L' ' && sym != L',') {
+                        word[z] = sym;
+                        key++;
+                        z++;
+                        if (z == size) {
+                            size += WORD;
+                            wchar_t *temp = realloc(word, size * sizeof(wchar_t));
+                            if (temp) {
+                                word = temp;
+                            }
+                            else {
+                                printf("\nAXTUNG\nMem sent error");
+                            }
+
                         }
 
                     }
-
                 }
                 j++;
 
@@ -318,9 +340,8 @@ void print_green(struct Text *txt){
             wprintf(L"\n");
         }
 
-        //wprintf(L"\n");
     }
-    wprintf(L"\n");
+    //wprintf(L"\n");
 }
 
 //green end
@@ -375,6 +396,13 @@ void xchange (struct Text *txt){
         len=wcslen(word);
         txt->sentences[i].len_without_first_word=txt->sentences[i].len-len;
         word = wcstok(NULL, L" ,", &pr);
+        if (word!=NULL){
+            txt->sentences[i].flag_xchange=1;
+        }
+        else{
+            txt->sentences[i].flag_xchange=0;
+            break;
+        }
         txt->sentences[i].second_word=malloc((len+1)* sizeof(wchar_t));
         wmemmove(txt->sentences[i].second_word,word,len);
         txt->sentences[i].second_word[len]=L'\0';
@@ -422,9 +450,9 @@ int menu(){
                 return 1;
             case (L'2'):    //2nd   +help
                 return 2;
-            case (L'3'):    //3d   +help
+            case (L'3'):    //3d    +help
                 return 3;
-            case (L'4'):    //4th    +help
+            case (L'4'):    //4th   +help
                 return 4;
             case (L"text"): //text
                 return 5;
@@ -447,13 +475,13 @@ int main(){
     // если 10 - упс!!!
 
 
-    //output_text(&txt);
-    //xchange(&txt);                        // исключение при количесвте слов меньше 2
+    output_text(&txt);
+    xchange(&txt);                        // исключение при количесвте слов меньше 2
     //sort(&txt);
-    green(&txt);                       //          FIX!!!        сам выводит
+    //green(&txt);
     //del_repeat(&txt);
     //wprintf(L"после\n");
-    //output_text(&txt);
+    output_text(&txt);
     //wprintf(L"EWRIKA\nthis is working\n");
     return 0;
 }

@@ -1,16 +1,13 @@
 // символ конца файла если из файла
 // ввод из файла        если будет скучно
 
-// debag green
-// one func left
-// main c возможностью выхода
+
+// FIX xchange
 // cmake
 //otchet
-// del len, 3d word len
-// free txt
 
+//wprintf(L"%ls [%ld] {%ld}\n",txt->sentences[i].sent,txt->sentences[i].len,txt->sentences[i].len_third_word);
 
-//221
 
 
 #include <wctype.h>
@@ -28,28 +25,26 @@
 #define SENT 32
 #define SIZE 64
 #define WORD 48
-#define HELLO                                                                                          \
-L"|    Здравствуй, пользователь!                                                                   |\n"\
-L"|    Добро пожаловать в мою прогрумму                                                            |\n"
-#define WHAT_U_WANT                                                                                    \
-L"|    Если ты хочешь:                                                                             |\n"\
-L"|    Заменить в каждом предложении первое слово на второе из предыдущего предложения, нажми 1    |\n"\
-L"|    Отсортировать предложения по длине третьего слова, нажми 2                                  |\n"\
-L"|    Вывести на экран предложения, в которых в середине слова встречаются цифры, нажми 3         |\n"\
-L"|    Убрать повторы в словах, нажми 4                                                            |\n"\
-L"|    Вывести текст, нажми 5                                                                      |\n"\
-L"|    Закончить работу, нажми 0                                                                   |\n"
-#define UNDERLINE                                                                                      \
-L" ================================================================================================\n"
+
+#define GOODBUE   L"Пока...\n"
 #define UPS  L"Упс, неверная команда\n"
+#define WHAT_U_WANT                                                                                    \
+L" ===============================================================================================\n"\
+L"|    1 --- Заменить в каждом предложении первое слово на второе из предыдущего предложения      |\n"\
+L"|    2 --- Отсортировать предложения по длине третьего слова                                    |\n"\
+L"|    3 --- Вывести на экран предложения, в которых в середине слова встречаются цифры           |\n"\
+L"|    4 --- Убрать повторы в словах                                                              |\n"\
+L"|    5 --- Вывести текст                                                                        |\n"\
+L"|    0 --- Закончить работу                                                                     |\n"\
+L" ===============================================================================================\n"
+
 struct Sentence{
     size_t len;
     wchar_t *sent;
     size_t len_third_word;
-    wchar_t flag_color;             //разукрашивание
+    wchar_t flag_color;
     wchar_t * second_word;
     size_t len_without_first_word;
-    wchar_t flag_xchange;
 };
 struct Text{
     struct Sentence *sentences;
@@ -75,9 +70,6 @@ void need_more_struct_memory(struct Sentence **sent , const size_t* len){
         printf("\nAXTUNG\nMem error");
     }
 }
-
-
-
 
 
 size_t get_text(struct Text *txt){
@@ -166,11 +158,10 @@ size_t get_text(struct Text *txt){
     return  count;
 }
 
-//delete
 void output_text(struct Text *txt){
     setlocale(LC_CTYPE, "");
     for (size_t i=0; i<txt->count_sent;i++){
-        wprintf(L"%ls [%ld] {%ld}\n",txt->sentences[i].sent,txt->sentences[i].len,txt->sentences[i].len_third_word);
+        wprintf(L"%ls\n",txt->sentences[i].sent);
     }
 
 };
@@ -239,7 +230,6 @@ void green(struct Text *txt){
         if (word == NULL) {
             continue;
         }
-        size_t LED=wcslen(word);
         if (wcslen(word)>=3){
             for (size_t j=1;j<wcslen(word)-1;j++) {
                 if (iswdigit(word[j]) != 0) {
@@ -346,7 +336,6 @@ void print_green(struct Text *txt){
 
 //green end
 
-// change start
 void del_repeat(struct Text *txt){
     wchar_t* copy;
     size_t len;
@@ -372,12 +361,11 @@ void del_repeat(struct Text *txt){
         free(copy);
     }
 }
-//change end
 
 //В каждом предложении заменить первое слово на второе слово из предыдущего предложения.
 // Для первого предложения, второе слово надо брать из последнего. start
 // строка без первого слова. второе слова
-void xchange (struct Text *txt){
+int xchange (struct Text *txt){
     size_t last=txt->count_sent;
     wchar_t* copy_sent;
     wchar_t* word;
@@ -385,7 +373,6 @@ void xchange (struct Text *txt){
     size_t len;      // len first word
     size_t len_first_word;
     wchar_t* pr;
-    size_t initial_mem;
     size_t tmp_size;
     for (size_t i=0;i<last;i++){
         len=0;
@@ -396,20 +383,23 @@ void xchange (struct Text *txt){
         len=wcslen(word);
         txt->sentences[i].len_without_first_word=txt->sentences[i].len-len;
         word = wcstok(NULL, L" ,", &pr);
-        if (word!=NULL){
+        if (word==NULL){
+            wprintf(L"BAD, SENT #%zu HAS LESS THEN 2 WORDS. TRY AGAIN!\n", i+1);
+            return 0;
+        }
+        /*if (word!=NULL){
             txt->sentences[i].flag_xchange=1;
         }
         else{
             txt->sentences[i].flag_xchange=0;
             break;
-        }
+        }*/
         txt->sentences[i].second_word=malloc((len+1)* sizeof(wchar_t));
         wmemmove(txt->sentences[i].second_word,word,len);
         txt->sentences[i].second_word[len]=L'\0';
         free(copy_sent);
 
     }
-
     len_first_word=wcslen(txt->sentences[last-1].second_word);
     copy=malloc(len_first_word*sizeof(wchar_t));
     wmemmove(copy,txt->sentences[last-1].second_word,len_first_word);
@@ -431,57 +421,76 @@ void xchange (struct Text *txt){
         wmemmove(txt->sentences[i].sent,copy,wcslen(copy));
         free(copy);
     }
+    return 1;
 }
 // end
 
 int menu(){
     setlocale(LC_CTYPE, "");
-    wprintf(L"%ls", UNDERLINE);
-    wprintf(L"%ls", HELLO);
     wprintf(L"%ls", WHAT_U_WANT);
-    wprintf(L"%ls", UNDERLINE);
-    //res=fgetwc(buff,stdin);
-
-    /*while(1) {
-        switch (res) {
-            case (L"exit"):    //exit
+    wchar_t* buff=malloc(SIZE* sizeof(wchar_t));
+    wprintf(L"Ваша команда : ");
+    wchar_t* res=fgetws(buff,40,stdin);
+    wchar_t command= res[0];
+        switch (command) {
+            case (L'0'):
                 return 0;
-            case (L'1'):    //1st   +help
+            case (L'1'):
                 return 1;
-            case (L'2'):    //2nd   +help
+            case (L'2'):
                 return 2;
-            case (L'3'):    //3d    +help
+            case (L'3'):
                 return 3;
-            case (L'4'):    //4th   +help
+            case (L'4'):
                 return 4;
-            case (L"text"): //text
+            case (L'5'):
                 return 5;
-            default:         //ups
+            default:
                 return 10;
         }
-    };*/
 
+}
+
+void goodbuy_world(struct Text *txt){
+    for (size_t i=0; i<txt->count_sent;i++){
+        free(txt->sentences[i].sent);
+    }
+    free(txt->sentences);
 }
 
 int main(){
     struct Text txt;
     setlocale(LC_CTYPE, "");
     size_t count;
-    size_t command;
-    size_t res;
+    int command;
     count= (size_t) get_text(&txt);
     txt.count_sent=count;
-
-    // если 10 - упс!!!
-
-
-    output_text(&txt);
-    xchange(&txt);                        // исключение при количесвте слов меньше 2
-    //sort(&txt);
-    //green(&txt);
-    //del_repeat(&txt);
-    //wprintf(L"после\n");
-    output_text(&txt);
-    //wprintf(L"EWRIKA\nthis is working\n");
+    do {
+        command = menu();
+        switch (command){
+            case 1:
+                if(xchange(&txt)==0) return 0;                  //FIX!!!!!!!!!!!!!!
+                break;
+            case 2:
+                sort(&txt);
+                break;
+            case 3 :
+                green(&txt);
+                break;
+            case 4:
+                del_repeat(&txt);
+                break;
+            case 5:
+                output_text(&txt);
+                break;
+            case 0:
+                wprintf(L"%ls",GOODBUE);
+                break;
+            case 10:
+                wprintf(L"%ls",UPS);
+                break;
+        }
+    }while(command!=0);
+    goodbuy_world(&txt);
     return 0;
 }

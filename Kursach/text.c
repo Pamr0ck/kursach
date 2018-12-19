@@ -168,7 +168,6 @@ void green(struct Text *txt){
 
 //green end
 
-
 void del_repeat(struct Text *txt){
     wchar_t* copy;
     size_t len;
@@ -190,6 +189,7 @@ void del_repeat(struct Text *txt){
         }
         k++;
         copy[k]=L'\0';
+        txt->sentences[i].len=k;
         wmemcpy(txt->sentences[i].sent,copy,txt->sentences[i].len+1);
         free(copy);
     }
@@ -198,6 +198,9 @@ void del_repeat(struct Text *txt){
 //В каждом предложении заменить первое слово на второе слово из предыдущего предложения.
 // Для первого предложения, второе слово надо брать из последнего. start
 // строка без первого слова. второе слова
+
+// change sent/len!!!!
+
 int xchange (struct Text *txt){
     size_t last=txt->count_sent;
     wchar_t* copy_sent;
@@ -209,7 +212,7 @@ int xchange (struct Text *txt){
     size_t tmp_size;
     for (size_t i=0;i<last;i++){
         copy_sent = malloc(sizeof(wchar_t)*txt->sentences[i].len+1);
-        wmemcpy(copy_sent,txt->sentences[i].sent,txt->sentences[i].len+1);
+        wcscpy(copy_sent,txt->sentences[i].sent);
         pr=NULL;
         word = wcstok(copy_sent, L" ,", &pr);
         len=wcslen(word);
@@ -217,12 +220,13 @@ int xchange (struct Text *txt){
         word = wcstok(NULL, L" ,", &pr);
         if (word==NULL){
             wprintf(L"BAD, SENT #%zu HAS LESS THEN 2 WORDS. TRY AGAIN!\n", i+1);
+            free(copy_sent);
             return 0;
         }
-
         len=wcslen(word);
-        txt->sentences[i].second_word=malloc((len+1)* sizeof(wchar_t));
-        wmemmove(txt->sentences[i].second_word,word,len);                  //mbg
+        //txt->sentences[i].second_word=malloc((len+1)* sizeof(wchar_t));
+        txt->sentences[i].second_word=word;
+        //wmemmove(txt->sentences[i].second_word,word,len);                  //mbg
         txt->sentences[i].second_word[len]=L'\0';
         free(copy_sent);
 
@@ -230,24 +234,34 @@ int xchange (struct Text *txt){
     len_first_word=wcslen(txt->sentences[last-1].second_word);
     copy=malloc(len_first_word*sizeof(wchar_t));
     wmemmove(copy,txt->sentences[last-1].second_word,len_first_word);
+    copy[len_first_word]=L'\0';
     tmp_size=len_first_word+txt->sentences[0].len_without_first_word+1;
     need_more_sent_memory(&copy,&tmp_size);
     wmemmove(copy+len_first_word,txt->sentences[0].sent+(txt->sentences[0].len-txt->sentences[0].len_without_first_word),txt->sentences[0].len_without_first_word);
-
-    //wmemmove(copy+len_first_word,txt->sentences[0].sent+(txt->sentences[0].len-txt->sentences[0].len_without_first_word),txt->sentences[0].len_without_first_word);                                  // ///////////////////////////
     copy[wcslen(copy)]=L'\0';//
+    //txt->sentences[0].sent=realloc(txt->sentences[0].sent,sizeof(wchar_t)*wcslen(copy));                            // mda
+    free(txt->sentences[0].sent);
+    txt->sentences[0].sent=calloc(wcslen(copy),sizeof(wchar_t));
     wmemmove(txt->sentences[0].sent,copy,wcslen(copy));
+    txt->sentences[0].len=wcslen(copy);
+    txt->sentences[0].sent[wcslen(txt->sentences[0].sent)]=L'\0';
     free(copy);
 
     for (size_t i=1;i<last;i++){
         len_first_word=wcslen(txt->sentences[i-1].second_word);
         copy=malloc(len_first_word*sizeof(wchar_t));
+        wchar_t* WORd=txt->sentences[i-1].second_word;
+        size_t WorD=wcslen(txt->sentences[i-1].second_word);
         wmemmove(copy,txt->sentences[i-1].second_word,len_first_word);
         tmp_size=len_first_word+txt->sentences[i].len_without_first_word+1;
         need_more_sent_memory(&copy,&tmp_size);
         wmemmove(copy+len_first_word,txt->sentences[i].sent+(txt->sentences[i].len-txt->sentences[i].len_without_first_word),txt->sentences[i].len_without_first_word);                                  // ///////////////////////////
         copy[wcslen(copy)]=L'\0';
+        free(txt->sentences[i].sent);
+        txt->sentences[i].sent=calloc(wcslen(copy),sizeof(wchar_t));             // mda
         wmemmove(txt->sentences[i].sent,copy,wcslen(copy));
+        txt->sentences[i].len=wcslen(copy);
+        txt->sentences[i].sent[wcslen(txt->sentences[i].sent)]=L'\0';
         free(copy);
     }
     return 1;

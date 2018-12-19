@@ -244,8 +244,8 @@ void green(struct Text *txt){
             if (word == NULL) {
                 break;
             }
-            if(wcslen(word)>=4) {
-                for (size_t j = 1; j < wcslen(word) - 2; j++) {
+            if(wcslen(word)>=3) {
+                for (size_t j = 1; j < wcslen(word) - 1; j++) {
                     if (iswdigit(word[j]) != 0) {
                         txt->sentences[i].flag_color = 1;
                         stop = 1;
@@ -375,7 +375,6 @@ int xchange (struct Text *txt){
     wchar_t* pr;
     size_t tmp_size;
     for (size_t i=0;i<last;i++){
-        len=0;
         copy_sent = malloc(sizeof(wchar_t)*txt->sentences[i].len+1);
         wmemcpy(copy_sent,txt->sentences[i].sent,txt->sentences[i].len+1);
         pr=NULL;
@@ -394,8 +393,9 @@ int xchange (struct Text *txt){
             txt->sentences[i].flag_xchange=0;
             break;
         }*/
+        len=wcslen(word);
         txt->sentences[i].second_word=malloc((len+1)* sizeof(wchar_t));
-        wmemmove(txt->sentences[i].second_word,word,len);
+        wmemmove(txt->sentences[i].second_word,word,len);                  //mbg
         txt->sentences[i].second_word[len]=L'\0';
         free(copy_sent);
 
